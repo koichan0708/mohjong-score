@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'self'; manifest-src 'self'; worker-src 'self'">
+<title>麻雀成績帳</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#f4f2ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121211" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="麻雀成績帳">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f2ec; --surface:#fcfcfb; --surface2:#f0eee7;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#85827a; --line:#e2dfd6;
+  --accent:#17654a; --accent-ink:#fff; --accent-soft:#e1eee7;
+  --warn:#9a5200; --warn-soft:#fbefdf; --danger:#b3261e; --danger-soft:#fbe7e5;
+  --r1:#184f95; --r2:#256abf; --r3:#3987e5; --r4:#86b6ef;
+  --grid:#e8e6df; --axis:#b9b6ad;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --surface2:#232321;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8d85; --line:#33322f;
+    --accent:#3fa57d; --accent-ink:#08130e; --accent-soft:#1d3329;
+    --warn:#f0a94a; --warn-soft:#352813; --danger:#f08a82; --danger-soft:#3a1d1b;
+    --r1:#9ec5f4; --r2:#6da7ec; --r3:#3987e5; --r4:#1c5cab;
+    --grid:#2a2a28; --axis:#55534e;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic UI",Meiryo,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1080px;margin:0 auto;padding:16px 16px 64px}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 14px}
+header.top h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.logo{width:26px;height:32px;border-radius:5px;background:var(--surface);border:1.5px solid var(--ink2);display:grid;place-items:center;font-size:15px;font-weight:700;color:var(--danger);box-shadow:0 2px 0 var(--accent)}
+.badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+.badge.ok::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:1px}
+.spacer{flex:1}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:14px;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{padding:9px 14px;text-decoration:none;color:var(--ink2);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+nav.tabs a.on{color:var(--ink);border-color:var(--accent)}
+nav.tabs a.cta{color:var(--accent)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.filters label{color:var(--ink2);font-size:12px}
+select,input[type=date],input[type=text],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:36px}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:2px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:7px;cursor:pointer;color:var(--ink2);min-height:30px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:500}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 12px;font-weight:700}
+.card h2 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.tile .k{font-size:12px;color:var(--ink2)}
+.tile .v{font-size:24px;font-weight:700;margin-top:2px}
+.tile .s{font-size:12px;color:var(--muted)}
+.tablewrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
+table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--ink2);font-weight:500;user-select:none}
+th.sortable{cursor:pointer}
+th.sortable:hover{color:var(--ink)}
+th .arr{font-size:10px;margin-left:3px}
+td.l,th.l{text-align:left}
+tbody tr:hover td{background:var(--surface2)}
+tr.sum td{font-weight:700;border-top:1.5px solid var(--ink2)}
+.sticky{position:sticky;left:0;background:var(--surface);z-index:1}
+tbody tr:hover td.sticky{background:var(--surface2)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:0}
+.rk{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:var(--surface2);font-size:12px;font-weight:700}
+.rk.g1{background:var(--accent);color:var(--accent-ink)}
+.dist{display:inline-flex;gap:2px;width:120px;height:10px;vertical-align:middle}
+.dist span{display:block;height:100%}
+.dist span:first-child{border-radius:4px 0 0 4px}
+.dist span:last-child{border-radius:0 4px 4px 0}
+.dist span:only-child{border-radius:4px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink2);align-items:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--ink);line-height:1.3;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 14px;cursor:pointer;min-height:36px;font-weight:500}
+.btn:hover{background:var(--surface2)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--danger)}
+.btn.danger.arm{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:12px;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;min-height:32px}
+.chip.on{border-color:var(--ink2);background:var(--surface2);font-weight:500}
+.chip:not(.on) .dot{opacity:.35}
+table.entry{width:auto}
+.entry td,.entry th{padding:6px 6px}
+@media (max-width:640px){ .entry .rkin{width:46px} .entry .sc input{width:74px} .pm{width:32px} }
+.entry input{width:100%;text-align:right}
+.entry .sc{display:flex;gap:4px}
+.entry .sc input{width:92px}
+.entry .rkin{width:56px}
+.pm{border:1px solid var(--line);background:var(--surface2);border-radius:8px;width:36px;cursor:pointer;font-weight:700}
+.note{padding:9px 12px;border-radius:8px;font-size:13px;margin-top:10px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.ok{background:var(--accent-soft);color:var(--accent)}
+.note.err{background:var(--danger-soft);color:var(--danger)}
+.banner{padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);margin-bottom:14px;font-size:13px}
+.hist{display:grid;gap:10px}
+.hcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.hhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.hhead b{font-size:15px}
+.rule{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2)}
+.rule.tonpu{border-color:var(--ink2)}
+.hres{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px}
+.hres div{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty{line-height:1.8}
+.empty .btn{margin-top:16px}
+.btn.pri{color:var(--accent-ink)}
+.chartbox{position:relative;width:100%}
+.chartbox svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;box-shadow:0 4px 16px rgba(0,0,0,.12);font-size:12px;min-width:150px;display:none;z-index:5}
+.tip .t{font-weight:700;margin-bottom:4px}
+.tip div.r{display:flex;justify-content:space-between;gap:12px}
+.mrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.mrow .nm{flex:1;min-width:0}
+.mrow input{flex:1}
+.fgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fgrid input{width:100%;text-align:right}
+.sc{display:flex;gap:6px}
+.calc{min-height:36px;display:flex;align-items:center;justify-content:flex-end;padding:0 10px;border-radius:8px;background:var(--surface2);font-weight:700}
+.hitem{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px dashed var(--line);flex-wrap:wrap}
+.hitem .hn{min-width:120px}
+.hitem .hv{flex:1}
+.hitem .hb{display:flex;gap:6px}
+.hmemo{order:5;flex-basis:100%;font-size:13px;color:var(--ink2);white-space:pre-wrap;background:var(--surface2);border-radius:8px;padding:6px 10px}
+.memo-cell{max-width:260px;white-space:normal;color:var(--ink2);font-size:13px}
+@media (max-width:640px){ .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))} .fgrid .field[style*="span 2"]{grid-column:span 2} }
+.app{padding-top:max(16px,env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+nav.tabs a .ic{display:none}
+@media (max-width:640px){
+  .app{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;background:var(--surface);border-top:1px solid var(--line);border-bottom:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:0;overflow:visible}
+  nav.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 4px;font-size:10.5px;border-bottom:0;margin:0;border-radius:8px;-webkit-tap-highlight-color:transparent}
+  nav.tabs a .ic{display:block;width:22px;height:22px}
+  nav.tabs a .lb-l{display:none}
+  nav.tabs a.on{color:var(--accent);background:var(--accent-soft)}
+  nav.tabs a.cta{color:var(--accent)}
+  #toast{bottom:calc(88px + env(safe-area-inset-bottom))}
+}
+@media (min-width:641px){ nav.tabs a .lb-s{display:none} }
+body{overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
+input,select,textarea{font-size:16px}
+@media (display-mode: standalone){ .install-hint{display:none} }
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none;z-index:50;font-size:13px;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--danger);color:#fff}
+textarea{width:100%;min-height:140px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.pos{color:var(--ink)} .neg{color:var(--ink2)}
+@media (max-width:640px){
+  .app{padding:12px 12px 64px}
+  .tile .v{font-size:20px}
+  .card{padding:14px}
+  .tablewrap{margin:0 -14px;padding:0 14px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1><span class="logo">中</span>麻雀成績帳</h1>
+    <span class="spacer"></span>
+    
+  </header>
+  <nav class="tabs" id="tabs">
+    <a href="#stats" data-tab="stats"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="lb-l">成績</span><span class="lb-s">成績</span></a>
+    <a href="#trend" data-tab="trend"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span class="lb-l">推移</span><span class="lb-s">推移</span></a>
+    <a href="#history" data-tab="history"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span class="lb-l">履歴</span><span class="lb-s">履歴</span></a>
+    <a href="#input" data-tab="input" class="cta"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span class="lb-l">＋ 入力</span><span class="lb-s">入力</span></a>
+    <a href="#backup" data-tab="backup"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span class="lb-l">データ</span><span class="lb-s">データ</span></a>
+  </nav>
+  <div id="banner"></div>
+  <section class="filters" id="filters"></section>
+  <main id="view"><div class="empty">読み込み中…</div></main>
+</div>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+// ---------- constants ----------
+const PAL_L=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
+const PAL_D=['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9','#e66767'];
+const NONE_COLOR_L='#52514e', NONE_COLOR_D='#c3c2b7';
+const RULES={hanchan:'半荘',tonpu:'東風',sanma:'三麻'};
+const RULE_LABEL={all:'半荘・東風',hanchan:'半荘',tonpu:'東風',sanma:'三麻'};
+const TABS=['stats','trend','history','input','backup'];
+const LS_KEY='mjscore.local.v2', UI_KEY='mjscore.ui.v2';
+const darkMQ=matchMedia('(prefers-color-scheme: dark)');
+
+// ---------- state ----------
+const S={mode:'local', members:{}, recs:{}, loaded:{m:false,r:false}};
+const UI={eventGroup:false,csv:null,tab:'stats', period:'all', from:'', to:'', rule:'all', event:'', sortKey:'score', sortDir:-1,
+  vsMember:null, trendSel:null, form:null, armed:null, editMember:null};
+try{ const u=JSON.parse(localStorage.getItem(UI_KEY)||'{}'); ['period','from','to','rule','event'].forEach(k=>{ if(typeof u[k]==='string') UI[k]=u[k]; }); }catch(e){}
+function saveUI(){ try{ localStorage.setItem(UI_KEY, JSON.stringify({period:UI.period,from:UI.from,to:UI.to,rule:UI.rule,event:UI.event})); }catch(e){} }
+
+// ---------- utils ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>ymd(new Date());
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0;};
+const int=v=>{const n=parseInt(v,10);return Number.isFinite(n)&&n>0?n:0;};
+const r1=v=>Math.round(v*10)/10;
+const fs=v=>{const x=r1(v);return (x>0?'+':x<0?'−':'±')+Math.abs(x).toFixed(1);};
+const f1=v=>r1(v).toFixed(1);
+const f2=v=>(Math.round(v*100)/100).toFixed(2);
+const pct=v=>(v*100).toFixed(1)+'%';
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const wd=s=>{const [y,m,d]=s.split('-').map(Number);return '日月火水木金土'[new Date(y,m-1,d).getDay()];};
+const fmtDate=s=>{ if(!s) return ''; const [y,m,d]=s.split('-'); return `${y}/${m}/${d}（${wd(s)}）`; };
+const toHalf=s=>String(s).replace(/[０-９．]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[＋]/g,'+').replace(/[−ー－]/g,'-').trim();
+let toastT;
+function toast(msg,err){ const t=$('#toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='',2600); }
+
+// ---------- data normalization (stored data is untrusted) ----------
+function normMember(d){ return {name:String(d&&d.name||'（名前なし）').slice(0,40), createdAt:num(d&&d.createdAt)}; }
+function normRec(d){
+  d=d||{};
+  const r=Array.isArray(d.r)?d.r:[d.r1,d.r2,d.r3,d.r4];
+  const rule=d.rule==='tonpu'||d.rule==='sanma'?d.rule:'hanchan';
+  const ranks=[0,1,2,3].map(i=>rule==='sanma'&&i===3?0:int(r[i]));
+  const rs=ranks.reduce((a,b)=>a+b,0);
+  return {
+    date:/^\d{4}-\d{2}-\d{2}$/.test(d.date)?d.date:'1970-01-01',
+    event:String(d.event||'').slice(0,60),
+    rule,
+    memberId:'',
+    memo:String(d.memo||'').slice(0,500),
+    r:ranks, games:int(d.games)||rs, score:num(d.score),
+    createdAt:num(d.createdAt), updatedAt:num(d.updatedAt)
+  };
+}
+
+// ---------- storage (this device only; no network) ----------
+function loadLocal(){
+  try{ const j=JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+    S.members={}; S.recs={};
+    Object.entries(j.recs||{}).forEach(([k,v])=>S.recs[k]=normRec(v));
+  }catch(e){}
+}
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({recs:S.recs})); return true; }catch(e){ toast('端末に保存できませんでした（空き容量を確認してください）',true); return false; } }
+function writeErr(){ /* errors are reported by saveLocal */ }
+async function putDoc(kind,id,obj){ S[kind][id]=kind==='members'?normMember(obj):normRec(obj); saveLocal(); render(); }
+async function delDoc(kind,id){ delete S[kind][id]; saveLocal(); render(); }
+function initStore(){
+  let ok=true; try{ const k='__t'; localStorage.setItem(k,'1'); localStorage.removeItem(k); }catch(e){ ok=false; }
+  S.mode='local'; loadLocal(); S.loaded={m:true,r:true};
+  if(!ok) setBanner('この画面ではデータを保存できません。プライベートブラウズを解除するか、ホーム画面に追加したアプリから開いてください。');
+  else if(false) setBanner('ブラウザの共有メニューから「ホーム画面に追加」すると、アプリとして使えます（データはこの端末の中だけに保存されます）。');
+  if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+  render();
+}
+function setBadge(){}
+function setBanner(t){ $('#banner').innerHTML=t?`<div class="banner install-hint">${esc(t)}</div>`:''; }
+
+// ---------- derived ----------
+const hasMembers=()=>Object.keys(S.members).length>0;
+function membersSorted(){ return Object.entries(S.members).map(([id,m])=>({id,...m})).sort((a,b)=>(a.createdAt-b.createdAt)||a.name.localeCompare(b.name,'ja')); }
+function mName(id){ if(!id) return '自分'; return S.members[id]?S.members[id].name:'（削除済み）'; }
+function mColor(id){ const dk=darkMQ.matches; if(!id) return dk?NONE_COLOR_D:NONE_COLOR_L; const i=membersSorted().findIndex(m=>m.id===id); const p=dk?PAL_D:PAL_L; return p[(i<0?0:i)%p.length]; }
+function periodRange(){
+  const t=new Date(), y=t.getFullYear(), m=t.getMonth();
+  switch(UI.period){
+    case 'thisMonth': return [ymd(new Date(y,m,1)), ymd(new Date(y,m+1,0))];
+    case 'lastMonth': return [ymd(new Date(y,m-1,1)), ymd(new Date(y,m,0))];
+    case 'last3': return [ymd(new Date(y,m-2,1)), ymd(new Date(y,m+1,0))];
+    case 'thisYear': return [`${y}-01-01`,`${y}-12-31`];
+    case 'lastYear': return [`${y-1}-01-01`,`${y-1}-12-31`];
+    case 'custom': return [UI.from||'0000-00-00', UI.to||'9999-12-31'];
+    default: return ['0000-00-00','9999-12-31'];
+  }
+}
+function periodLabel(){
+  if(UI.period==='all') return '全期間';
+  const [a,b]=periodRange(); const f=s=>s.startsWith('0000')||s.startsWith('9999')?'':s.replace(/-/g,'/');
+  return `${f(a)} 〜 ${f(b)}`;
+}
+function condLabel(){ return `${periodLabel()}・${RULE_LABEL[UI.rule]||''}${UI.event?'・'+UI.event:''}`; }
+function allRecs(){ return Object.entries(S.recs).map(([id,r])=>({id,...r})); }
+function eventsList(){ return [...new Set(allRecs().map(r=>r.event).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja')); }
+function recsIn(rule){
+  const [a,b]=periodRange(); rule=rule||UI.rule;
+  return allRecs().filter(r=>r.date>=a&&r.date<=b&&(rule==='all'?r.rule!=='sanma':r.rule===rule)&&(!UI.event||r.event===UI.event))
+    .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:(x.createdAt-y.createdAt));
+}
+const rsum=r=>r.r[0]+r.r[1]+r.r[2]+r.r[3];
+const groupKey=r=>`${r.date}|${r.event}|${r.rule}`;
+function emptyAgg(){ return {dset:new Set(),sanma:false,days:0,games:0,rgames:0,score:0,ranks:[0,0,0,0],best:-Infinity,worst:Infinity}; }
+function addTo(a,r){ if(r.rule==='sanma') a.sanma=true; a.dset.add(r.date); a.days=a.dset.size; a.games+=r.games; a.rgames+=rsum(r); a.score+=r.score; r.r.forEach((c,i)=>a.ranks[i]+=c); a.best=Math.max(a.best,r.score); a.worst=Math.min(a.worst,r.score); }
+function finish(a){
+  const g=a.rgames;
+  a.avgScore=a.games?a.score/a.games:0;
+  a.avgRank=g?(a.ranks[0]+2*a.ranks[1]+3*a.ranks[2]+4*a.ranks[3])/g:null;
+  a.top=g?a.ranks[0]/g:null; a.rentai=g?(a.ranks[0]+a.ranks[1])/g:null; a.last=g?a.ranks[a.sanma?2:3]/g:null;
+  return a;
+}
+function aggregate(recs){ const m={}; recs.forEach(r=>addTo(m[r.memberId]??=emptyAgg(),r)); Object.values(m).forEach(finish); return m; }
+const pctx=v=>v==null?'—':pct(v);
+const rk=v=>v==null?'—':f2(v);
+function distBar(ranks){
+  const g=ranks.reduce((a,b)=>a+b,0);
+  if(!g) return '<span class="muted">—</span>';
+  const segs=ranks.map((c,i)=>c?`<span style="width:${c/g*100}%;background:var(--r${i+1})"></span>`:'').join('');
+  return `<span class="dist" title="1着 ${ranks[0]} / 2着 ${ranks[1]} / 3着 ${ranks[2]} / 4着 ${ranks[3]}">${segs}</span>`;
+}
+const distLegend4=`<span class="legend"><span><i style="background:var(--r1)"></i>1着</span><span><i style="background:var(--r2)"></i>2着</span><span><i style="background:var(--r3)"></i>3着</span><span><i style="background:var(--r4)"></i>4着</span></span>`;
+const distLegendFor=()=>UI.rule==='sanma'?distLegend4.replace(/<span><i style="background:var\(--r4\)"><\/i>4着<\/span>/,''):distLegend4;
+function nameCell(id){ return `<span class="dot" style="background:${mColor(id)}"></span>${esc(mName(id))}`; }
+
+// ---------- filters bar ----------
+function renderFilters(){
+  const el=$('#filters');
+  if(!['stats','trend','vs','history'].includes(UI.tab)){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='';
+  const evs=eventsList(); if(UI.event&&!evs.includes(UI.event)) UI.event='';
+  const opt=(v,t)=>`<option value="${v}"${UI.period===v?' selected':''}>${t}</option>`;
+  el.innerHTML=`
+    <select id="fPeriod" aria-label="期間">
+      ${opt('all','全期間')}${opt('thisMonth','今月')}${opt('lastMonth','先月')}${opt('last3','直近3か月')}${opt('thisYear','今年')}${opt('lastYear','昨年')}${opt('custom','期間を指定')}
+    </select>
+    ${UI.period==='custom'?`<input type="date" id="fFrom" value="${esc(UI.from)}" aria-label="開始日"><span class="muted">〜</span><input type="date" id="fTo" value="${esc(UI.to)}" aria-label="終了日">`:''}
+    <div class="seg" role="group" aria-label="ルール">
+      ${[['all','半荘・東風'],['hanchan','半荘'],['tonpu','東風'],['sanma','三麻']].map(([v,t])=>`<button data-rule="${v}" class="${UI.rule===v?'on':''}">${t}</button>`).join('')}
+    </div>
+    ${evs.length?`<select id="fEvent" aria-label="大会名"><option value="">すべての大会</option>${evs.map(e=>`<option value="${esc(e)}"${UI.event===e?' selected':''}>${esc(e)}</option>`).join('')}</select>`:''}`;
+  el.querySelector('#fPeriod').onchange=e=>{ UI.period=e.target.value; saveUI(); render(); };
+  const ff=el.querySelector('#fFrom'), ft=el.querySelector('#fTo'), fe=el.querySelector('#fEvent');
+  if(ff) ff.onchange=e=>{ UI.from=e.target.value; saveUI(); render(); };
+  if(ft) ft.onchange=e=>{ UI.to=e.target.value; saveUI(); render(); };
+  if(fe) fe.onchange=e=>{ UI.event=e.target.value; saveUI(); render(); };
+  el.querySelectorAll('[data-rule]').forEach(b=>b.onclick=()=>{ UI.rule=b.dataset.rule; saveUI(); render(); });
+}
+
+// ---------- views ----------
+function noData(){ return `<div class="card empty">この条件に当てはまる記録はありません。<br><a class="btn pri" href="#input">成績を入力する</a></div>`; }
+
+function summaryTiles(recs){
+  const a=finish(recs.reduce((acc,r)=>(addTo(acc,r),acc),emptyAgg()));
+  const by={hanchan:0,tonpu:0,sanma:0}; recs.forEach(r=>by[r.rule]+=r.games);
+  const dates=new Set(recs.map(r=>r.date));
+  const tile=(k,v,sub='')=>`<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div>${sub?`<div class="s num">${sub}</div>`:''}</div>`;
+  const unit=u=>`<small style="font-size:13px"> ${u}</small>`;
+  return `<div class="tiles">
+    ${tile('合計スコア',fs(a.score),`平均 ${fs(a.avgScore)} ／ 戦`)}
+    ${tile('対局数',a.games+unit('戦'),`参加 ${dates.size} 日`)}
+    ${tile('平均着順',rk(a.avgRank))}
+    ${tile('トップ率',pctx(a.top),`1着 ${a.ranks[0]} 回`)}
+    ${tile('連対率',pctx(a.rentai),`1・2着 ${a.ranks[0]+a.ranks[1]} 回`)}
+    ${tile('ラス率',pctx(a.last),`${a.sanma?3:4}着 ${a.ranks[a.sanma?2:3]} 回`)}
+  </div>`;
+}
+
+function viewStats(){
+  const recs=recsIn(); if(!recs.length) return noData();
+  return summaryTiles(recs)+ruleCard('', '東風・半荘別の成績')+eventCard(recs);
+}
+function ruleCard(memberKey,title){
+  const san=UI.rule==='sanma';
+  const rows=(san?['sanma']:['hanchan','tonpu']).map(rule=>{ const a=emptyAgg(); recsIn(rule).filter(r=>r.memberId===memberKey).forEach(r=>addTo(a,r)); return [RULES[rule],finish(a)]; });
+  const tot=emptyAgg(); if(!san) recsIn('all').filter(r=>r.memberId===memberKey).forEach(r=>addTo(tot,r)); finish(tot);
+  if(san) title='三麻の成績';
+  const row=(label,a,cls='')=>`<tr class="${cls}"><td class="l">${label}</td><td class="num">${a.days}</td><td class="num">${a.games}</td><td class="num"><b>${fs(a.score)}</b></td><td class="num">${a.games?fs(a.avgScore):'—'}</td><td class="num"><b>${rk(a.avgRank)}</b></td><td class="num">${pctx(a.top)}</td><td class="num">${pctx(a.rentai)}</td><td class="num">${pctx(a.last)}</td></tr>`;
+  return `<div class="card">
+    <h2>${title}<small>${esc(periodLabel())}${UI.event?'・'+esc(UI.event):''}</small></h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="l">ルール</th><th>参加日数</th><th>対局数</th><th>合計スコア</th><th>平均スコア</th><th>平均着順</th><th>トップ率</th><th>連対率</th><th>ラス率</th></tr></thead>
+      <tbody>${san?row(rows[0][0],rows[0][1]):row(rows[0][0],rows[0][1])+row(rows[1][0],rows[1][1])+row('半荘・東風 合計',tot,'sum')}</tbody>
+    </table></div>
+  </div>`;
+}
+function eventCard(recs){
+  if(!recs.length) return '';
+  const grouped=UI.eventGroup;
+  const anyMember=recs.some(r=>r.memberId);
+  const san=UI.rule==='sanma';
+  const evName=k=>k?esc(k):'<span class="muted">（大会名なし）</span>';
+  const rankCells=(r4,isSan)=>r4.map((c,i)=>`<td class="num">${isSan&&i===3?'<span class="muted">—</span>':c}</td>`).join('');
+  const rankHead=`<th>1着</th><th>2着</th><th>3着</th>${san?'':'<th>4着</th>'}`;
+  const ranksOf=(arr,isSan)=>rankCells(san?arr.slice(0,3):arr,isSan&&!san);
+  let body;
+  if(grouped){
+    const m={}; recs.forEach(r=>{ const k=r.event||''; const g=m[k]??={k,n:0,dates:new Set(),games:0,score:0,ranks:[0,0,0,0],first:r.date,last:r.date,hasSan:false};
+      g.n++; g.dates.add(r.date); g.games+=r.games; g.score+=r.score; r.r.forEach((c,i)=>g.ranks[i]+=c); if(r.date<g.first) g.first=r.date; if(r.date>g.last) g.last=r.date; if(r.rule==='sanma') g.hasSan=true; });
+    const rows=Object.values(m).sort((a,b)=>a.last<b.last?1:a.last>b.last?-1:0);
+    const span=g=>g.first===g.last?g.first.replace(/-/g,'/'):`${g.first.replace(/-/g,'/')} 〜 ${g.last.replace(/-/g,'/')}`;
+    body=`<thead><tr><th class="l sticky">大会名</th><th class="l">期間</th><th>参加日数</th><th>対局数</th>${rankHead}<th>合計スコア</th></tr></thead>
+      <tbody>${rows.map(g=>`<tr><td class="l sticky">${evName(g.k)}</td><td class="l small">${span(g)}</td><td class="num">${g.dates.size}</td><td class="num">${g.games}</td>${ranksOf(g.ranks,false)}<td class="num"><b>${fs(g.score)}</b></td></tr>`).join('')}</tbody>`;
+  } else {
+    const rows=[...recs].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.createdAt-a.createdAt);
+    body=`<thead><tr><th class="l sticky">日付</th><th class="l">大会名</th><th class="l">ルール</th>${anyMember?'<th class="l">メンバー</th>':''}<th>対局数</th>${rankHead}<th>合計スコア</th><th class="l">メモ</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td class="l sticky">${fmtDate(r.date)}</td><td class="l">${evName(r.event)}</td><td class="l"><span class="rule ${r.rule}">${RULES[r.rule]}</span></td>${anyMember?`<td class="l">${nameCell(r.memberId)}</td>`:''}<td class="num">${r.games}</td>${ranksOf(r.r,r.rule==='sanma')}<td class="num"><b>${fs(r.score)}</b></td><td class="l memo-cell">${r.memo?esc(r.memo):'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody>`;
+  }
+  return `<div class="card">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><h2 style="margin:0">大会別の成績</h2><span class="spacer"></span>
+      <div class="seg" role="group" aria-label="表示方法"><button data-evgroup="0" class="${grouped?'':'on'}">個別</button><button data-evgroup="1" class="${grouped?'on':''}">同じ大会名でまとめる</button></div></div>
+    <div class="tablewrap"><table>${body}</table></div>
+    <p class="muted small" style="margin:8px 0 0">${grouped?'大会名ごとに合計しています。':`${recs.length} 件（新しい順）`}</p>
+  </div>`;
+}
+
+function viewTrend(){
+  const recs=recsIn(); if(!recs.length) return noData();
+  const present=new Set(recs.map(r=>r.memberId));
+  const keys=[...(present.has('')?['']:[]), ...membersSorted().filter(m=>present.has(m.id)).map(m=>m.id)];
+  if(!UI.trendSel) UI.trendSel=new Set(keys.slice(0,8));
+  const showChips=keys.length>1;
+  const sel=keys.filter(k=>UI.trendSel.has(k)||!showChips);
+  return `
+  <div class="card">
+    <h2>累計スコアの推移<small>${esc(condLabel())}</small></h2>
+    ${showChips?`<div class="chips" style="margin-bottom:12px">${keys.map(k=>`<button class="chip ${UI.trendSel.has(k)?'on':''}" data-trend="${esc(k)}"><span class="dot" style="background:${mColor(k)}"></span>${esc(mName(k))}</button>`).join('')}</div>`:''}
+    ${sel.length?`<div class="chartbox" id="chart"></div>`:'<div class="empty">表示するメンバーを選んでください</div>'}
+    ${sel.length>8?'<div class="note warn">9人以上を同時に表示すると色が重複します。8人以内に絞ると見やすくなります。</div>':''}
+  </div>`;
+}
+function drawTrend(){
+  const box=$('#chart'); if(!box) return;
+  const recs=recsIn();
+  const dates=[...new Set(recs.map(r=>r.date))].sort();
+  const present=new Set(recs.map(r=>r.memberId));
+  let keys=[...(present.has('')?['']:[]), ...membersSorted().filter(m=>present.has(m.id)).map(m=>m.id)];
+  if(keys.length>1) keys=keys.filter(k=>UI.trendSel.has(k));
+  const series=keys.map(k=>{
+    let cum=null; const vals=dates.map(dt=>{
+      let s=null; recs.forEach(r=>{ if(r.date===dt&&r.memberId===k) s=(s||0)+r.score; });
+      if(s!==null) cum=(cum||0)+s; return {v:cum, played:s!==null, day:s};
+    });
+    let hi=null, lo=null;
+    vals.forEach((p,i)=>{ if(p.v==null) return; if(hi==null||p.v>vals[hi].v) hi=i; if(lo==null||p.v<vals[lo].v) lo=i; });
+    const lastI=vals.map(p=>p.v!=null).lastIndexOf(true);
+    return {id:k,name:mName(k),color:mColor(k),vals,hi,lo,lastI};
+  });
+  // text width estimate (CJK ≈ 1em, others ≈ .6em)
+  const tw=(t,fz=11)=>[...String(t)].reduce((w,c)=>w+(c.charCodeAt(0)>0x2e80?fz:fz*0.62),0);
+  const W=Math.max(320,box.clientWidth), small=W<560, H=small?280:340;
+  const direct=series.length<=4;
+  let lo=0,hi=0; series.forEach(s=>s.vals.forEach(p=>{ if(p.v!=null){ lo=Math.min(lo,p.v); hi=Math.max(hi,p.v);} }));
+  const ticks=niceTicks(lo,hi,small?4:5); lo=ticks[0]; hi=ticks[ticks.length-1];
+  const tickTxt=t=>(t>0?'+':'')+t;
+  const shortName=n=>n.length>5?n.slice(0,5)+'…':n;
+  const ml=Math.ceil(Math.max(...ticks.map(t=>tw(tickTxt(t)))))+14;
+  const mr=direct?Math.ceil(Math.max(...series.map(s=>Math.max(tw(shortName(s.name)),tw(fs(s.vals[s.lastI]?.v??0))))))+14:12;
+  const M={l:ml,r:mr,t:22,b:30};
+  const iw=W-M.l-M.r, ih=H-M.t-M.b, n=dates.length;
+  const X=i=>M.l+(n===1?iw/2:i*iw/(n-1)), Y=v=>M.t+ih-(v-lo)/(hi-lo||1)*ih;
+  const cs=getComputedStyle(document.documentElement);
+  const grid=cs.getPropertyValue('--grid'), axis=cs.getPropertyValue('--axis'), ink=cs.getPropertyValue('--ink'), ink2=cs.getPropertyValue('--ink2'), surf=cs.getPropertyValue('--surface');
+  const halo=`stroke="${surf}" stroke-width="3" paint-order="stroke" stroke-linejoin="round"`;
+  let g='';
+  ticks.forEach(t=>{ g+=`<line x1="${M.l}" x2="${M.l+iw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t===0?axis:grid}" stroke-width="1"/>`;
+    g+=`<text x="${M.l-8}" y="${Y(t)+4}" text-anchor="end" font-size="11" fill="${ink2}">${tickTxt(t)}</text>`; });
+  // x labels: thin out by available width, always keep first & last without collision
+  const lblW=40, maxLbl=Math.max(2,Math.floor(iw/lblW));
+  const step=Math.max(1,Math.ceil(n/maxLbl));
+  const xs=[]; for(let i=0;i<n;i+=step) xs.push(i);
+  if(n>1&&xs[xs.length-1]!==n-1){ if(X(n-1)-X(xs[xs.length-1])<lblW) xs.pop(); xs.push(n-1); }
+  xs.forEach(i=>{ const [,mo,da]=dates[i].split('-'); const anchor=n===1?'middle':i===0?'start':i===n-1?'end':'middle';
+    g+=`<text x="${X(i)}" y="${H-8}" text-anchor="${anchor}" font-size="11" fill="${ink2}">${+mo}/${+da}</text>`; });
+  series.forEach(s=>{
+    let path='', started=false;
+    s.vals.forEach((p,i)=>{ if(p.v==null) return; path+=(started?'L':'M')+X(i).toFixed(1)+','+Y(p.v).toFixed(1); started=true; });
+    g+=`<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(n<=40) s.vals.forEach((p,i)=>{ if(p.played) g+=`<circle cx="${X(i)}" cy="${Y(p.v)}" r="3" fill="${s.color}" stroke="${surf}" stroke-width="1.5"/>`; });
+  });
+  // occupied boxes for collision avoidance
+  const boxes=[]; const hit=(b)=>boxes.some(o=>b.x<o.x+o.w&&b.x+b.w>o.x&&b.y<o.y+o.h&&b.y+b.h>o.y);
+  // direct end labels: spread vertically, keep inside the plot height
+  let ends='';
+  if(direct){
+    const gap=28, top=M.t+6, bot=M.t+ih+4;
+    const labs=series.filter(s=>s.lastI>=0).map(s=>({s,v:s.vals[s.lastI].v,y:Y(s.vals[s.lastI].v)})).sort((a,b)=>a.y-b.y);
+    for(let i=0;i<labs.length;i++) labs[i].y=Math.max(labs[i].y,top,i?labs[i-1].y+gap:-1e9);
+    for(let i=labs.length-1;i>=0;i--) labs[i].y=Math.min(labs[i].y,i<labs.length-1?labs[i+1].y-gap:bot-gap/2);
+    const x=M.l+iw+8;
+    labs.forEach(l=>{ ends+=`<text x="${x}" y="${l.y-2}" font-size="11" fill="${ink2}">${esc(shortName(l.s.name))}</text><text x="${x}" y="${l.y+11}" font-size="11" font-weight="700" fill="${ink}">${fs(l.v)}</text>`;
+      boxes.push({x,y:l.y-13,w:M.r,h:28}); });
+  }
+  // high / low markers with labels
+  let marks='';
+  const labelsOn=series.length<=2;
+  // reserve every high/low marker first so labels never sit on top of one
+  series.forEach(s=>{ [s.hi,s.lo].forEach(i=>{ if(i!=null) boxes.push({x:X(i)-7,y:Y(s.vals[i].v)-7,w:14,h:14}); }); });
+  const place=(s,i,kind)=>{
+    const v=s.vals[i].v, cx=X(i), cy=Y(v);
+    marks+=`<circle cx="${cx}" cy="${cy}" r="5.5" fill="${surf}" stroke="${s.color}" stroke-width="2.5"/>`;
+    if(!labelsOn) return;
+    const txt=`${kind==='hi'?'最高':'最低'} ${fs(v)}`, w=tw(txt)+4, h=14;
+    const tries=kind==='hi'?[-1,1]:[1,-1];
+    for(const dir of tries){
+      let x=cx-w/2; x=Math.max(M.l+2,Math.min(x,M.l+iw-w-2));
+      const y=dir<0?cy-10-h:cy+8;
+      if(y<2||y+h>M.t+ih+2) continue;
+      const b={x,y,w,h}; if(hit(b)) continue;
+      boxes.push(b);
+      marks+=`<text x="${x+2}" y="${y+11}" font-size="11" font-weight="700" fill="${ink}" ${halo}>${txt}</text>`;
+      return;
+    }
+  };
+  series.forEach(s=>{ if(s.hi==null) return; place(s,s.hi,'hi'); if(s.lo!==s.hi) place(s,s.lo,'lo'); });
+  g+=marks+ends;
+  g+=`<line id="xh" x1="0" x2="0" y1="${M.t}" y2="${M.t+ih}" stroke="${axis}" stroke-width="1" visibility="hidden"/>`;
+  g+=`<g id="hl"></g><rect id="hit" x="${M.l}" y="${M.t}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  const fmtD=d=>{ const [,mo,da]=d.split('-'); return `${+mo}/${+da}`; };
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="累計スコアの推移">${g}</svg><div class="tip" id="tip"></div>
+    ${direct?'':`<div class="legend" style="margin-top:8px">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>`}`;
+  const svg=box.querySelector('svg'), tip=box.querySelector('#tip'), xh=box.querySelector('#xh'), hl=box.querySelector('#hl');
+  const move=ev=>{
+    const rc=svg.getBoundingClientRect(); const sx=(ev.clientX-rc.left)*W/rc.width;
+    const i=n===1?0:Math.max(0,Math.min(n-1,Math.round((sx-M.l)/iw*(n-1))));
+    xh.setAttribute('x1',X(i)); xh.setAttribute('x2',X(i)); xh.setAttribute('visibility','visible');
+    hl.innerHTML=series.map(s=>s.vals[i].v==null?'':`<circle cx="${X(i)}" cy="${Y(s.vals[i].v)}" r="4.5" fill="${s.color}" stroke="${surf}" stroke-width="2"/>`).join('');
+    const rows=series.filter(s=>s.vals[i].v!=null).sort((a,b)=>b.vals[i].v-a.vals[i].v);
+    tip.innerHTML=`<div class="t">${fmtDate(dates[i])}</div>`+rows.map(s=>`<div class="r"><span><span class="dot" style="background:${s.color}"></span>${esc(s.name)}</span><span class="num"><b>${fs(s.vals[i].v)}</b>${s.vals[i].played?` <span class="muted">(${fs(s.vals[i].day)})</span>`:''}</span></div>`).join('');
+    tip.style.display='block';
+    const px=X(i)*rc.width/W, twd=tip.offsetWidth;
+    tip.style.left=Math.max(0,(px+14+twd>rc.width?px-14-twd:px+14))+'px'; tip.style.top='8px';
+  };
+  const hr=box.querySelector('#hit');
+  hr.addEventListener('pointermove',move); hr.addEventListener('pointerdown',move);
+  hr.addEventListener('pointerleave',()=>{ tip.style.display='none'; xh.setAttribute('visibility','hidden'); hl.innerHTML=''; });
+}
+function niceTicks(min,max,n){
+  if(min===max){ min-=10; max+=10; }
+  const raw=(max-min)/n, mag=10**Math.floor(Math.log10(raw)), f=raw/mag;
+  const step=(f<1.5?1:f<3?2:f<7?5:10)*mag;
+  const out=[]; for(let v=Math.floor(min/step)*step; v<=Math.ceil(max/step)*step+1e-9; v+=step) out.push(Math.round(v*1e6)/1e6);
+  return out;
+}
+
+function viewHistory(){
+  const recs=recsIn().reverse(); if(!recs.length) return noData();
+  const groups=[]; const idx={};
+  recs.forEach(r=>{ const k=groupKey(r); if(!(k in idx)){ idx[k]=groups.length; groups.push({date:r.date,event:r.event,rule:r.rule,items:[]}); } groups[idx[k]].items.push(r); });
+  return `<div class="hist">${groups.map(gp=>`<div class="hcard">
+    <div class="hhead"><b>${fmtDate(gp.date)}</b><span class="rule ${gp.rule}">${RULES[gp.rule]}</span>${gp.event?`<span>${esc(gp.event)}</span>`:''}</div>
+    ${gp.items.sort((a,b)=>b.score-a.score).map(r=>{ const armed=UI.armed==='r:'+r.id;
+      return `<div class="hitem">
+        <span class="num hv"><b>${fs(r.score)}</b> <span class="muted small">${r.games}戦（${(r.rule==='sanma'?r.r.slice(0,3):r.r).join('-')}）</span></span>
+        ${r.memo?`<span class="hmemo">${esc(r.memo)}</span>`:''}
+        <span class="hb"><button class="btn sm" data-act="edit" data-id="${esc(r.id)}">編集</button>
+        <button class="btn sm danger ${armed?'arm':''}" data-act="delrec" data-id="${esc(r.id)}">${armed?'本当に削除':'削除'}</button>
+        ${armed?`<button class="btn sm" data-act="disarm">やめる</button>`:''}</span>
+      </div>`; }).join('')}
+  </div>`).join('')}</div>`;
+}
+
+function newForm(keep){
+  return {id:null, date:keep?keep.date:today(), event:keep?keep.event:'', rule:keep?keep.rule:'hanchan', memberId:'',
+    r:['','','',''], games:'', gamesTouched:false, score:'', memo:''};
+}
+function viewInput(){
+  if(!UI.form) UI.form=newForm();
+  const F=UI.form; const ms=membersSorted();
+  const gl='対局数';
+  return `
+  <div class="card">
+    <h2>${F.id?'記録を編集':'成績を入力'}<small>1日（1大会）分の合計を入力します</small></h2>
+    <div class="row">
+      <label class="field"><span>日付</span><input type="date" id="iDate" value="${esc(F.date)}"></label>
+      <label class="field" style="flex:1;min-width:180px"><span>大会名</span><input type="text" id="iEvent" list="evList" value="${esc(F.event)}" placeholder="例：〇〇杯、△△雀荘 月例戦" maxlength="60"></label>
+      <div class="field"><span>ルール</span><div class="seg" id="iRule">${['hanchan','tonpu','sanma'].map(v=>`<button data-v="${v}" class="${F.rule===v?'on':''}">${RULES[v]}</button>`).join('')}</div></div>
+    </div>
+    <datalist id="evList">${eventsList().map(e=>`<option value="${esc(e)}">`).join('')}</datalist>
+    <div class="fgrid" style="margin-top:14px">
+      ${(F.rule==='sanma'?[0,1,2]:[0,1,2,3]).map(k=>`<label class="field"><span>${k+1}着 回数</span><input type="number" inputmode="numeric" min="0" step="1" data-f="r${k}" value="${esc(F.r[k])}" placeholder="0"></label>`).join('')}
+    </div>
+    <div class="fgrid" style="margin-top:10px">
+      <label class="field"><span id="gLabel">${gl}</span><input type="number" inputmode="numeric" min="0" step="1" data-f="games" value="${esc(F.games)}" placeholder="自動"></label>
+      <div class="field" style="grid-column:span 2"><span>合計スコア</span><div class="sc"><button class="pm" data-act="pm" title="プラス／マイナス切り替え" aria-label="符号を切り替え">±</button><input type="text" inputmode="decimal" data-f="score" value="${esc(F.score)}" placeholder="0.0" style="flex:1;text-align:right"></div></div>
+    </div>
+    <label class="field" style="margin-top:10px"><span>メモ（任意）</span><textarea id="iMemo" maxlength="500" placeholder="対局の振り返り、役満、同卓者など" style="min-height:72px;font-family:inherit;font-size:16px">${esc(F.memo||'')}</textarea></label>
+    <div id="iSum"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn pri" data-act="save">${F.id?'更新する':'保存する'}</button>
+      ${F.id?'<button class="btn" data-act="cancel">編集をやめる</button>':'<button class="btn" data-act="clear">入力をクリア</button>'}
+    </div>
+  </div>
+  <p class="muted small">対局数は着順回数の合計から自動で入ります（手で変えることもできます）。半荘・東風・三麻を同じ日に打ったときは、ルールごとに分けて入力してください。三麻は半荘・東風とは別に集計されます。</p>`;
+}
+function parseForm(){
+  const F=UI.form; const s=toHalf(F.score);
+  const r=F.r.map((v,i)=>F.rule==='sanma'&&i===3?0:int(toHalf(v))); const rs=r.reduce((a,b)=>a+b,0);
+  const g=F.gamesTouched&&String(F.games).trim()!==''?int(toHalf(F.games)):rs;
+  return {r,rs,games:g,score:s===''?0:Number(s),scoreOk:s===''||Number.isFinite(Number(s)),scoreEmpty:s===''};
+}
+function updateInputSummary(){
+  const F=UI.form; if(!F) return; const p=parseForm();
+  const gi=document.querySelector('[data-f=games]');
+  if(gi&&!F.gamesTouched){ gi.value=p.rs||''; }
+    const el=$('#iSum'); if(!el) return;
+  const notes=[];
+  if(!p.scoreOk) notes.push(['err','合計スコアに数字以外が入っています。']);
+  if(p.rs&&p.games&&p.rs!==p.games) notes.push(['warn',`着順回数の合計（${p.rs}）と対局数（${p.games}）が合っていません。平均着順は着順回数から計算します。`]);
+  const dup=Object.entries(S.recs).some(([id,r])=>id!==F.id&&r.date===F.date&&r.event===F.event.trim()&&r.rule===F.rule&&r.memberId===F.memberId);
+  if(dup&&(p.rs>0||!p.scoreEmpty)) notes.push(['warn','同じ日付・大会名・ルールの記録がすでにあります。保存すると別の記録として追加されます。']);
+  el.innerHTML=notes.map(([c,t])=>`<div class="note ${c}">${esc(t)}</div>`).join('');
+}
+async function saveForm(){
+  const F=UI.form; const p=parseForm();
+  if(!F.date) return toast('日付を入力してください',true);
+  if(!p.scoreOk) return toast('合計スコアを数字で入力してください',true);
+  if(!p.games) return toast('着順回数か対局数を入力してください',true);
+  const id=F.id||uid('r'); const prev=S.recs[id];
+  const obj={date:F.date, event:F.event.trim(), rule:F.rule, memberId:F.memberId||'', memo:(F.memo||'').trim(), r:p.r, games:p.games, score:r1(p.score),
+    createdAt:prev?prev.createdAt:Date.now(), updatedAt:Date.now()};
+  const btn=document.querySelector('[data-act=save]'); if(btn) btn.disabled=true;
+  try{ await putDoc('recs',id,obj);
+    toast(F.id?'記録を更新しました':`${fmtDate(F.date)}${obj.event?'　'+obj.event:''} を保存しました`);
+    const wasEdit=!!F.id; UI.form=wasEdit?newForm():newForm(F);
+    if(wasEdit) location.hash='history'; else render();
+  }catch(e){ writeErr(e); if(btn) btn.disabled=false; }
+}
+
+function viewBackup(){
+  const n=Object.keys(S.recs).length, m=Object.keys(S.members).length;
+  const P=UI.csv;
+  return `
+  <div class="card">
+    <h2>スプレッドシートから取り込む</h2>
+    <p class="muted small" style="margin-top:0">スプレッドシートのセルを見出し行ごとコピーして貼り付けるか、CSVファイルを選んでください。1行目は見出しにします。</p>
+    <p class="small" style="margin:0 0 8px">使える見出し：<b>日付</b>・大会名・ルール・<b>1着</b>・<b>2着</b>・<b>3着</b>・4着・対局数・<b>合計スコア</b>・メモ<span class="muted">（太字は必須。列の順番は自由）</span></p>
+    <div class="row" style="margin-bottom:8px"><label class="btn">CSVファイルを選ぶ<input type="file" id="csvFile" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden></label><button class="btn" data-act="tplcsv">ひな形をダウンロード</button></div>
+    <textarea id="csvText" placeholder="日付	大会名	ルール	1着	2着	3着	4着	対局数	合計スコア&#10;2026/10/01	月例杯	半荘	2	1	1	1	5	+42.5">${esc(P?P.text:'')}</textarea>
+    <div class="row" style="margin-top:10px">
+      <label class="field"><span>ルール列がない行のルール</span><select id="csvRule">${['hanchan','tonpu','sanma'].map(v=>`<option value="${v}"${(P?P.defRule:'hanchan')===v?' selected':''}>${RULES[v]}</option>`).join('')}</select></label>
+      <button class="btn" data-act="csvpreview">内容を確認</button>
+    </div>
+    ${P&&P.result?csvPreviewHTML(P.result):''}
+  </div>
+  <div class="card">
+    <h2>保存場所</h2>
+    <p style="margin:0">データはこの端末の中（アプリ内の保存領域）だけに保存され、外部には送信されません。記録 ${n} 件。</p>
+    <p class="muted small" style="margin:8px 0 0">アプリを削除したり、ブラウザのWebサイトデータを消去したりするとデータも消えます。機種変更に備えて、ときどきバックアップを保存してください。</p>
+  </div>
+  <div class="card">
+    <h2>バックアップ</h2>
+    <div class="row"><button class="btn pri" data-act="exportfile">バックアップを保存</button><button class="btn" data-act="export">テキストでコピー</button><button class="btn" data-act="exportcsvfile">記録一覧をCSVで保存</button></div>
+    <p class="muted small" style="margin:8px 0 0">「バックアップを保存」でファイル（.json）を書き出します。ファイルアプリなどに保存しておけます。</p>
+  </div>
+  <div class="card">
+    <h2>復元・取り込み</h2>
+    <div class="row"><label class="btn">ファイルを選ぶ<input type="file" id="impFile" accept=".json,application/json,text/plain" hidden></label></div>
+    <p class="muted small" style="margin:10px 0 6px">またはテキストを貼り付け：</p>
+    <textarea id="imp" placeholder='{"members":{...},"recs":{...}}'></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" data-act="import">取り込む</button></div>
+    <p class="muted small" style="margin:8px 0 0">同じ記録は上書きされ、それ以外は追加されます。</p>
+  </div>`;
+}
+
+// ---------- render ----------
+function render(opts={}){
+  document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===UI.tab));
+  renderFilters();
+  if(!(S.loaded.m&&S.loaded.r)&&S.mode!=='local') return;
+  const v=$('#view');
+  // don't wipe a form someone is typing in when other devices' data arrives
+  if(opts.fromSnap && v.dataset.tab===UI.tab && (UI.tab==='input'||UI.tab==='members'||UI.tab==='backup') && v.contains(document.activeElement) && document.activeElement.matches('input,textarea,select')){ if(UI.tab==='input') updateInputSummary(); return; }
+  const html={stats:viewStats,trend:viewTrend,history:viewHistory,input:viewInput,backup:viewBackup}[UI.tab]();
+  v.innerHTML=html; v.dataset.tab=UI.tab;
+  if(UI.tab==='trend') drawTrend();
+  if(UI.tab==='input') updateInputSummary();
+  const vs=$('#vsSel'); if(vs) vs.onchange=e=>{ UI.vsMember=e.target.value; render(); };
+}
+
+// ---------- events ----------
+function routeFromHash(){ const h=location.hash.slice(1); UI.tab=TABS.includes(h)?h:'stats'; UI.armed=null; UI.editMember=null; render(); window.scrollTo(0,0); }
+addEventListener('hashchange',routeFromHash);
+let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ if(UI.tab==='trend') drawTrend(); },150); });
+if(darkMQ.addEventListener) darkMQ.addEventListener('change',()=>render());
+
+const view=$('#view');
+view.addEventListener('click',async e=>{
+  const t=e.target.closest('button,a'); if(!t) return;
+  if(t.dataset.vs){ UI.vsMember=t.dataset.vs; return; }
+  if(t.dataset.evgroup!==undefined){ UI.eventGroup=t.dataset.evgroup==='1'; render(); return; }
+  if(t.dataset.sort){ const k=t.dataset.sort; if(UI.sortKey===k) UI.sortDir*=-1; else { UI.sortKey=k; UI.sortDir=(k==='avgRank'||k==='last'||k==='worst')?1:-1; } render(); return; }
+  if(t.dataset.trend!==undefined){ const id=t.dataset.trend; UI.trendSel.has(id)?UI.trendSel.delete(id):UI.trendSel.add(id); render(); return; }
+  if(t.closest('#iRule')&&t.dataset.v){ UI.form.rule=t.dataset.v; if(t.dataset.v==='sanma') UI.form.r[3]=''; render(); return; }
+  const act=t.dataset.act, id=t.dataset.id;
+  if(act==='pm'){ let s=toHalf(UI.form.score); s=s.startsWith('-')?s.slice(1):s.startsWith('+')?'-'+s.slice(1):'-'+s; UI.form.score=s;
+    const inp=t.parentElement.querySelector('input'); inp.value=s; inp.focus(); updateInputSummary(); return; }
+  if(act==='save') return saveForm();
+  if(act==='clear'){ UI.form=newForm(); render(); return; }
+  if(act==='cancel'){ UI.form=newForm(); location.hash='history'; return; }
+  if(act==='edit'){ const r=S.recs[id]; UI.form={id,date:r.date,event:r.event,rule:r.rule,memberId:r.memberId,memo:r.memo,r:r.r.map(String),games:String(r.games),gamesTouched:r.games!==rsum(r),score:String(r1(r.score))}; location.hash='input'; return; }
+  if(act==='disarm'){ UI.armed=null; render(); return; }
+  if(act==='delrec'){ if(UI.armed!=='r:'+id){ UI.armed='r:'+id; render(); return; } UI.armed=null; try{ await delDoc('recs',id); toast('記録を削除しました'); }catch(err){ writeErr(err); render(); } return; }
+  if(act==='delm'){ if(UI.armed!=='m:'+id){ UI.armed='m:'+id; render(); return; } UI.armed=null; const n=mName(id); try{ await delDoc('members',id); toast(`${n}さんを削除しました`); }catch(err){ writeErr(err); render(); } return; }
+  if(act==='ren'){ UI.editMember=id; render(); const r=$('#ren'); if(r){ r.focus(); r.select(); } return; }
+  if(act==='rencancel'){ UI.editMember=null; render(); return; }
+  if(act==='renok'){ const n=($('#ren').value||'').trim(); if(!n) return toast('名前を入力してください',true);
+    if(Object.entries(S.members).some(([k,m])=>k!==id&&m.name===n)) return toast('同じ名前のメンバーがいます',true);
+    UI.editMember=null; try{ await putDoc('members',id,{...S.members[id],name:n}); toast('名前を変更しました'); }catch(err){ writeErr(err); } render(); return; }
+  if(act==='copycsv'){ const agg=aggregate(recsIn());
+    const lines=[['名前','参加日数','対局数','合計スコア','平均スコア','平均着順','1着','2着','3着','4着','トップ率','連対率','ラス率'].join(',')];
+    Object.entries(agg).sort((a,b)=>b[1].score-a[1].score).forEach(([mid,a])=>lines.push([csvq(mName(mid)),a.days,a.games,f1(a.score),f1(a.avgScore),a.avgRank==null?'':f2(a.avgRank),...a.ranks,pctx(a.top),pctx(a.rentai),pctx(a.last)].join(',')));
+    copy(lines.join('\n'),'表をCSVでコピーしました'); return; }
+  if(act==='csvpreview'){ const text=($('#csvText')||{}).value||''; const defRule=($('#csvRule')||{}).value||'hanchan';
+    if(!text.trim()) return toast('貼り付けるか、ファイルを選んでください',true);
+    UI.csv={text,defRule,result:analyzeCSV(text,defRule)}; render(); return; }
+  if(act==='csvimport'){ csvImport(); return; }
+  if(act==='csvreset'){ UI.csv=null; render(); return; }
+  if(act==='tplcsv'){ downloadText('日付,大会名,ルール,1着,2着,3着,4着,対局数,合計スコア,メモ\r\n2026/10/01,月例杯,半荘,2,1,1,1,5,42.5,\r\n2026/10/08,フリー,東風,1,2,1,2,6,-18.0,南場で失速\r\n2026/10/15,三麻会,三麻,3,1,2,,6,55.0,\r\n','麻雀成績帳_ひな形.csv','text/csv'); toast('ひな形を書き出しました'); return; }
+  if(act==='exportcsvfile'){ downloadText(recordsCSV(),`麻雀成績帳_記録_${today()}.csv`,'text/csv'); toast('CSVを書き出しました'); return; }
+  if(act==='export'){ copy(backupJSON(),'全データをコピーしました'); return; }
+  if(act==='exportfile'){ const blob=new Blob([backupJSON()],{type:'application/json'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`麻雀成績帳_${today()}.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000); toast('バックアップを書き出しました'); return; }
+  if(act==='import'){ let j; try{ j=JSON.parse($('#imp').value); }catch(err){ return toast('テキストの形式が正しくありません',true); }
+    const mem=Object.entries(j.members||{}), rs=Object.entries(j.recs||{});
+    if(!rs.length) return toast('取り込めるデータがありません',true);
+    importData(mem,rs); const ta=$('#imp'); if(ta) ta.value=''; return; }
+});
+view.addEventListener('input',e=>{
+  const t=e.target; if(!UI.form||UI.tab!=='input') return;
+  if(t.id==='iDate'){ UI.form.date=t.value; updateInputSummary(); return; }
+  if(t.id==='iEvent'){ UI.form.event=t.value; updateInputSummary(); return; }
+  if(t.id==='iMemo'){ UI.form.memo=t.value; return; }
+  const f=t.dataset.f; if(!f) return;
+  if(f==='score') UI.form.score=t.value;
+  else if(f==='games'){ UI.form.games=t.value; UI.form.gamesTouched=t.value.trim()!==''; }
+  else if(f[0]==='r') UI.form.r[+f[1]]=t.value;
+  updateInputSummary();
+});
+function backupJSON(){ return JSON.stringify({app:'mjscore',version:3,exportedAt:new Date().toISOString(),recs:S.recs}); }
+function importData(mem,rs){
+  const ok=k=>/^[\w\-.~:@+]{1,100}$/.test(k); let n=0;
+  for(const [k,v] of rs) if(ok(k)){ S.recs[k]=normRec(v); n++; }
+  if(saveLocal()) toast(`${n} 件を取り込みました`); UI.trendSel=null; render();
+}
+view.addEventListener('change',e=>{
+  if(e.target.id!=='impFile') return; const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>{ let j; try{ j=JSON.parse(rd.result); }catch(err){ return toast('ファイルの形式が正しくありません',true); }
+    const mem=Object.entries(j.members||{}), rs=Object.entries(j.recs||{});
+    if(!rs.length) return toast('取り込めるデータがありません',true); importData(mem,rs); };
+  rd.readAsText(f); e.target.value='';
+});
+// ---------- spreadsheet (CSV / TSV) import ----------
+function parseDelimited(text){
+  text=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const first=text.split('\n')[0]||'';
+  const d=first.includes('\t')?'\t':(first.split(',').length>=first.split(';').length?',':';');
+  const rows=[]; let row=[], cur='', q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=c; }
+    else if(c==='"'&&cur==='') q=true;
+    else if(c===d){ row.push(cur); cur=''; }
+    else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+    else cur+=c; }
+  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+const COLS=[
+  ['date',/^(日付|日にち|年月日|開催日|date)$/i],
+  ['event',/(大会|イベント|場所|会場|event)/i],
+  ['rule',/(ルール|種別|形式|東風.?半荘|四麻.?三麻|rule)/i],
+  ['r0',/^(1着|１着|一着|トップ|1位|１位)(回数|数)?$/],
+  ['r1',/^(2着|２着|二着|2位|２位)(回数|数)?$/],
+  ['r2',/^(3着|３着|三着|3位|３位)(回数|数)?$/],
+  ['r3',/^(4着|４着|四着|ラス|4位|４位)(回数|数)?$/],
+  ['games',/(対局数|半荘数|打半荘数|戦数|試合数|ゲーム数|games)/i],
+  ['score',/(スコア|得点|点数|収支|成績|ポイント|pt|score)/i],
+  ['memo',/(メモ|備考|コメント|memo|note)/i]];
+function mapHeader(h){
+  const map={}; h.forEach((raw,i)=>{ const t=String(raw).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[\s\u3000]/g,'');
+    for(const [k,re] of COLS){ if(map[k]===undefined&&re.test(t)){ map[k]=i; break; } } });
+  return map;
+}
+function parseDateCell(v){
+  v=toHalf(String(v||'')).trim(); if(!v) return null;
+  if(/^\d{5}(\.\d+)?$/.test(v)){ const d=new Date(Date.UTC(1899,11,30)+Math.floor(Number(v))*864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; }
+  let m=v.match(/^(\d{4})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})/);
+  if(m) return chk(+m[1],+m[2],+m[3]);
+  m=v.match(/^(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})日?$/);
+  if(m) return chk(new Date().getFullYear(),+m[1],+m[2]);
+  return null;
+  function chk(y,mo,d){ const x=new Date(y,mo-1,d); return x.getFullYear()===y&&x.getMonth()===mo-1&&x.getDate()===d?ymd(x):null; }
+}
+function parseRuleCell(v,def){
+  const t=toHalf(String(v||'')).trim(); if(!t) return def;
+  if(/(サンマ|さんま|三麻|3麻|三人|3人|sanma)/i.test(t)) return 'sanma';
+  if(/(東|tonpu|東風)/i.test(t)) return 'tonpu';
+  if(/(半|hanchan|四麻|4麻)/i.test(t)) return 'hanchan';
+  return null;
+}
+function parseNumCell(v){ const t=toHalf(String(v??'')).replace(/[,，\s]|pt|ｐｔ|点/gi,'').replace(/^▲/,'-').replace(/^△/,'-'); if(t==='') return {empty:true,val:0,ok:true}; const n=Number(t); return {empty:false,val:n,ok:Number.isFinite(n)}; }
+function hashStr(str){ let h1=0x811c9dc5, h2=0; for(let i=0;i<str.length;i++){ const c=str.charCodeAt(i); h1=Math.imul(h1^c,16777619)>>>0; h2=(Math.imul(h2,31)+c)>>>0; } return h1.toString(36)+h2.toString(36); }
+function analyzeCSV(text,defRule){
+  const rows=parseDelimited(text);
+  if(rows.length<2) return {error:'見出し行とデータ行が必要です。'};
+  const map=mapHeader(rows[0]);
+  const missing=[['date','日付'],['r0','1着'],['r1','2着'],['r2','3着'],['score','合計スコア']].filter(([k])=>map[k]===undefined).map(([,l])=>l);
+  if(missing.length) return {error:`見出しが見つかりません：${missing.join('・')}。1行目の見出しを確認してください。`, header:rows[0]};
+  const ok=[], bad=[]; const names=new Set();
+  rows.slice(1).forEach((r,i)=>{
+    const line=i+2, cell=k=>map[k]===undefined?'':r[map[k]];
+    const errs=[];
+    const date=parseDateCell(cell('date')); if(!date) errs.push('日付');
+    const rule=parseRuleCell(cell('rule'),defRule); if(!rule) errs.push('ルール');
+    const rk=[0,1,2,3].map(k=>parseNumCell(cell('r'+k)));
+    rk.forEach((x,k)=>{ if(!x.ok||x.val<0||!Number.isInteger(x.val)) errs.push(`${k+1}着`); });
+    const sc=parseNumCell(cell('score')); if(!sc.ok||sc.empty) errs.push('合計スコア');
+    const gm=parseNumCell(cell('games')); if(!gm.ok) errs.push('対局数');
+    if(errs.length) return bad.push({line,why:errs.join('・')+' を読み取れません'});
+    const ranks=rk.map((x,k)=>rule==='sanma'&&k===3?0:x.val); const rs=ranks.reduce((a,b)=>a+b,0);
+    const games=gm.empty?rs:gm.val; if(!games) return bad.push({line,why:'着順回数も対局数も0です'});
+    const event=String(cell('event')||'').trim().slice(0,60);
+    const memo=String(cell('memo')||'').trim().slice(0,500);
+    ok.push({line,date,event,rule,memo,r:ranks,games,score:r1(sc.val)});
+  });
+  return {header:rows[0],map,ok,bad};
+}
+function csvPreviewHTML(R){
+  if(R.error) return `<div class="note err">${esc(R.error)}</div>`;
+  const used=Object.entries(R.map).map(([k,i])=>`${esc(R.header[i])}→${{date:'日付',event:'大会名',rule:'ルール',r0:'1着',r1:'2着',r2:'3着',r3:'4着',games:'対局数',score:'合計スコア',memo:'メモ'}[k]}`).join('、');
+  const sample=R.ok.slice(0,5);
+  return `<div class="note ok">${R.ok.length} 件を取り込めます。</div>
+    <p class="muted small" style="margin:8px 0">読み取った列：${used}</p>
+    ${sample.length?`<div class="tablewrap"><table><thead><tr><th class="l">日付</th><th class="l">大会名</th><th class="l">ルール</th><th>1着</th><th>2着</th><th>3着</th><th>4着</th><th>対局数</th><th>合計スコア</th></tr></thead>
+    <tbody>${sample.map(x=>`<tr><td class="l">${fmtDate(x.date)}</td><td class="l">${esc(x.event)||'—'}</td><td class="l">${RULES[x.rule]}</td>${x.r.map((c,i)=>`<td class="num">${x.rule==='sanma'&&i===3?'—':c}</td>`).join('')}<td class="num">${x.games}</td><td class="num"><b>${fs(x.score)}</b></td></tr>`).join('')}</tbody></table></div>
+    ${R.ok.length>5?`<p class="muted small" style="margin:6px 0 0">ほか ${R.ok.length-5} 件</p>`:''}`:''}
+    ${R.bad.length?`<div class="note warn">${R.bad.length} 行は読み取れないため取り込みません：<br>${R.bad.slice(0,10).map(b=>`${b.line}行目（${esc(b.why)}）`).join('<br>')}${R.bad.length>10?'<br>ほか':''}</div>`:''}
+    ${R.ok.length?`<div class="row" style="margin-top:12px"><button class="btn pri" data-act="csvimport">${R.ok.length} 件を取り込む</button><button class="btn" data-act="csvreset">やめる</button></div>
+    <p class="muted small" style="margin:6px 0 0">同じ内容の行を2回取り込んでも、記録は重複しません。</p>`:''}`;
+}
+function csvImport(){
+  const R=UI.csv&&UI.csv.result; if(!R||!R.ok) return;
+  let t0=Date.now();
+  R.ok.forEach((x,i)=>{
+    const memberId='';
+    const id='c'+hashStr([x.date,x.event,x.rule,'',x.r.join('-'),x.games,x.score,x.line].join('|'));
+    S.recs[id]=normRec({date:x.date,event:x.event,rule:x.rule,memberId,memo:x.memo,r:x.r,games:x.games,score:x.score,createdAt:t0+i,updatedAt:t0});
+  });
+  if(saveLocal()) toast(`${R.ok.length} 件を取り込みました`);
+  UI.csv=null; UI.trendSel=null; location.hash='stats';
+}
+function downloadText(text,name,type){
+  const blob=new Blob(['\uFEFF'+text],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+function recordsCSV(){
+  const lines=[['日付','大会名','ルール','1着','2着','3着','4着','対局数','合計スコア','メモ'].join(',')];
+  allRecs().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.createdAt-b.createdAt).forEach(r=>lines.push([r.date.replace(/-/g,'/'),csvq(r.event),RULES[r.rule],r.r[0],r.r[1],r.r[2],r.rule==='sanma'?'':r.r[3],r.games,f1(r.score),csvq(r.memo||'')].join(',')));
+  return lines.join('\r\n');
+}
+view.addEventListener('change',e=>{
+  if(e.target.id==='csvRule'){ UI.csv=UI.csv||{text:'',defRule:'hanchan'}; UI.csv.defRule=e.target.value; return; }
+  if(e.target.id!=='csvFile') return; const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const buf=new Uint8Array(rd.result); let text;
+    try{ text=new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(err){ try{ text=new TextDecoder('shift_jis').decode(buf); }catch(e2){ text=new TextDecoder().decode(buf); } }
+    const defRule=($('#csvRule')||{}).value||'hanchan';
+    UI.csv={text,defRule,result:analyzeCSV(text,defRule)}; render(); };
+  rd.readAsArrayBuffer(f); e.target.value='';
+});
+view.addEventListener('input',e=>{ if(e.target.id==='csvText'){ UI.csv=UI.csv||{defRule:'hanchan'}; UI.csv.text=e.target.value; UI.csv.result=null; } });
+const csvq=s=>`"${String(s).replace(/"/g,'""')}"`;
+async function copy(text,msg){
+  try{ await navigator.clipboard.writeText(text); toast(msg); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} ta.remove(); toast(ok?msg:'コピーできませんでした',!ok); }
+}
+
+routeFromHash();
+initStore();
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
